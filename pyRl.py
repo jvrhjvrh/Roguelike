@@ -8,8 +8,9 @@ class GameObject:
         self.color = color
     
     def move(self,dx,dy):
-        self.x += dx
-        self.y += dy
+        if not my_map[self.x + dx][self.y +dy].blocked:
+            self.x += dx
+            self.y += dy
     
     def draw (self):
         con.draw_char(self.x,self.y,self.char,self.color)
@@ -28,6 +29,7 @@ MAP_WIDTH = 80
 MAP_HEIGHT = 45
 color_dark_wall = (0, 0, 100)
 color_dark_ground = (50, 50, 150)
+my_map = []
 
 def make_map():
     global my_map
@@ -42,11 +44,16 @@ def make_map():
 def render_all():
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH):
-            wall = my_map.block_sight
+            wall = my_map[x][y].block_sight
             if wall:
                 con.draw_char(x,y,None, fg = None, bg = color_dark_wall)
             else:
                 con.draw_char(x,y,None,fg = None, bg = color_dark_ground)
+    
+    for obj in objects:
+        obj.draw()
+
+    root.blit(con,0,0,SCREEN_WIDTH,SCREEN_HEIGHT,0,0)
 
 
 def handle_keys():
@@ -74,10 +81,9 @@ player = GameObject(SCREEN_WIDTH//2, SCREEN_HEIGHT//2, '@', (255,255,255))
 npc = GameObject(SCREEN_WIDTH//2 - 5, SCREEN_HEIGHT//2, '@', (255,255,0))
 objects = [npc, player]
 
+make_map()
 while not tdl.event.is_window_closed():
-    for obj in objects:
-        obj.draw()
-    root.blit(con,0,0,SCREEN_WIDTH,SCREEN_HEIGHT,0,0)
+    render_all()
     tdl.flush()
     
     for obj in objects:
