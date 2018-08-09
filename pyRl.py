@@ -22,6 +22,12 @@ class Tile:
         self.blocked = blocked
         if(block_sight is None): block_sight = blocked
         self.block_sight = block_sight
+class Rect:
+    def __init__(self,x,y,w,h):
+        self.x1 = x
+        self.y1 = y
+        self.x2 = x+w
+        self.y2 = y+h
 
 SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
@@ -31,15 +37,23 @@ color_dark_wall = (0, 0, 100)
 color_dark_ground = (50, 50, 150)
 my_map = []
 
+def create_room(room):
+    global my_map
+
+    for x in range(room.x1 + 1, room.x2):
+        for y in range(room.y1 + 1, room.y2):
+            my_map[x][y].blocked = False
+            my_map[x][y].block_sight = False
+
 def make_map():
     global my_map
 
-    my_map = [[Tile(False) for y in range(MAP_HEIGHT)] for x in range(MAP_WIDTH)]
+    my_map = [[Tile(True) for y in range(MAP_HEIGHT)] for x in range(MAP_WIDTH)]
 
-    my_map[30][22].blocked = True
-    my_map[30][22].block_sight = True
-    my_map[50][22].blocked = True
-    my_map[50][22].block_sight = True
+    room1 = Rect(20, 15, 10, 15)
+    room2 = Rect(50, 15, 10, 15)
+    create_room(room1)
+    create_room(room2)
 
 def render_all():
     for y in range(MAP_HEIGHT):
@@ -82,6 +96,8 @@ npc = GameObject(SCREEN_WIDTH//2 - 5, SCREEN_HEIGHT//2, '@', (255,255,0))
 objects = [npc, player]
 
 make_map()
+player.x = 25
+player.y = 23
 while not tdl.event.is_window_closed():
     render_all()
     tdl.flush()
