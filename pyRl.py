@@ -28,6 +28,27 @@ MAP_WIDTH = 80
 MAP_HEIGHT = 45
 color_dark_wall = (0, 0, 100)
 color_dark_ground = (50, 50, 150)
+
+def make_map():
+    global my_map
+
+    my_map = [[Tile(False) for y in range(MAP_HEIGHT)] for x in range(MAP_WIDTH)]
+
+    my_map[30][22].blocked = True
+    my_map[30][22].block_sight = True
+    my_map[50][22].blocked = True
+    my_map[50][22].block_sight = True
+
+def render_all():
+    for y in range(MAP_HEIGHT):
+        for x in range(MAP_WIDTH):
+            wall = my_map.block_sight
+            if wall:
+                con.draw_char(x,y,None, fg = None, bg = color_dark_wall)
+            else:
+                con.draw_char(x,y,None,fg = None, bg = color_dark_ground)
+
+
 def handle_keys():
 
     user_input = tdl.event.key_wait()
