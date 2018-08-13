@@ -3,6 +3,7 @@ from random import randint
 import colors
 import math
 import textwrap
+import cores
 
 class GameObject:
     def __init__(self,x,y,char,name,color, blocks = False, fighter = None, ai = None):
@@ -73,10 +74,10 @@ class GameObject:
             damage = self.power - target.fighter.defense
 
             if damage > 0:
-                print(self.owner.name.capitalize() + " attacks " + target.name + " for " + str(damage) + " hit points")
+                message(self.owner.name.capitalize() + " ataca " + target.name + " e causa " + str(damage) + " de dano")
                 target.fighter.take_damage(damage)
             else:
-                print(self.owner.name.capitalize() + " attacks " + target.name + " but it has no effect " )
+                message(self.owner.name.capitalize() + " ataca " + target.name + " mas nao causa efeito " )
     class BasicMonster:
         def take_turn(self):
             monster = self.owner
@@ -94,6 +95,7 @@ class Tile:
         if(block_sight is None): block_sight = blocked
         self.block_sight = block_sight
         self.explored = False
+
 class Rect:
     def __init__(self,x,y,w,h):
         self.x1 = x
@@ -109,7 +111,6 @@ class Rect:
     def intersect(self,other):
         #retorna verdadeiro se intersectar com outro retangulo
         return(self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1)
-
 
 FOV_ALGO = "BASIC"
 FOV_LIGHT_WALLS = True
@@ -129,19 +130,6 @@ PANEL_Y = SCREEN_HEIGHT - PANEL_HEIGHT
 MSG_X = BAR_WIDTH + 2
 MSG_WIDTH = SCREEN_WIDTH - BAR_WIDTH -2
 MSG_HEIGHT = PANEL_HEIGHT - 1
-
-
-color_dark_wall = (0, 0, 100)
-color_light_wall = (130, 110, 50)
-color_dark_ground = (50, 50, 150)
-color_light_ground = (200, 180, 50)
-color_dead_char = (191,0,0)
-color_red = (255,0,0)
-color_black = (0,0,0)
-color_white = (0,0,0)
-color_light_red = (255,115,115)
-color_dark_red =(191,0,0)
-color_light_grey = (159,159,159)
 
 my_map = []
 game_msgs = []
@@ -245,7 +233,7 @@ def is_blocked(x, y):
     
     return False
 
-def message(new_msg, color = color_white):
+def message(new_msg, color = cores.white):
     
     new_msg_lines = textwrap.wrap(new_msg,MSG_WIDTH)
 
@@ -268,14 +256,14 @@ def render_all():
                 if not visible:
                     if my_map[x][y].explored:
                         if wall:
-                            con.draw_char(x,y,None,fg = None,bg = color_dark_wall)
+                            con.draw_char(x,y,None,fg = None,bg = cores.dark_wall)
                         else:
-                            con.draw_char(x,y,None, fg = None, bg = color_dark_ground)
+                            con.draw_char(x,y,None, fg = None, bg = cores.dark_ground)
                 else:
                     if wall:
-                        con.draw_char(x,y,None, fg = None, bg = color_light_wall)
+                        con.draw_char(x,y,None, fg = None, bg = cores.light_wall)
                     else:
-                        con.draw_char(x,y,None,fg = None, bg = color_light_ground)
+                        con.draw_char(x,y,None,fg = None, bg = cores.light_ground)
                     my_map[x][y].explored = True
     
     for obj in objects:
@@ -285,15 +273,15 @@ def render_all():
 
     root.blit(con,0,0,MAP_WIDTH,MAP_HEIGHT,0,0)
 
-    panel.clear(fg = color_white, bg =color_black)
+    panel.clear(fg = cores.white, bg =cores.black)
 
     y = 1
     for(line,color) in  game_msgs:
         panel.draw_str(MSG_X, y, line, bg = None, fg = color)
         y += 1
 
-    render_bar(1,1,BAR_WIDTH, "HP", player.fighter.hp, player.fighter.max_hp, color_light_red, color_dark_red)
-    panel.draw_str(1,0,get_names_under_mouse(), bg = None, fg = color_light_grey)
+    render_bar(1,1,BAR_WIDTH, "HP", player.fighter.hp, player.fighter.max_hp, cores.light_red, cores.dark_red)
+    panel.draw_str(1,0,get_names_under_mouse(), bg = None, fg = cores.light_grey)
 
     root.blit(panel, 0, PANEL_Y, SCREEN_WIDTH, PANEL_HEIGHT, 0, 0)
 
@@ -328,12 +316,13 @@ def player_move_or_attack(dx, dy):
 
     target = None
     for obj in objects:
-        if obj.x ==x and obj.y == y and obj.fighter:
+        if obj.x ==x and obj.y == y and obj.fighter and obj != player:
             target = obj
             break
     
     if target is not None:
         player.fighter.attack(target)
+        fov_recompute = True
     else:
         player.move(dx,dy)
         fov_recompute = True
@@ -341,19 +330,19 @@ def player_move_or_attack(dx, dy):
 def player_death(player):
     global game_state
 
-    print("You died")
+    message("Voce morreu", color =cores.red)
 
     game_state = "dead"
 
     player.char = "%"
-    player.color = color_dead_char
+    player.color = cores.dead_char
 
 def monster_death(monster):
 
-    print(monster.name.capitalize() + "morreu")
+    message(monster.name.capitalize() + " morreu", color = cores.red)
 
     monster.char = "%"
-    monster.color = color_dead_char
+    monster.color = cores.dead_char
     monster.blocks = False
     monster.fighter = None
     monster.ai =  None
@@ -394,18 +383,24 @@ def handle_keys():
         return "exit"
     
     if game_state == "playing":
-        if user_input.key == "UP":
+        if user_input.key == "KP8":
             player_move_or_attack(0,-1)
-            fov_recompute = True
-        elif user_input.key == "DOWN":
+        elif user_input.key == "CHAR":
+            player_move_or_attack(0,0)
+        elif user_input.key == "KP9":
+            player_move_or_attack(1,-1)
+        elif user_input.key == "KP7":
+            player_move_or_attack(-1, -1)
+        elif user_input.key == "KP2":
             player_move_or_attack(0,1)
-            fov_recompute = True
-        elif user_input.key == "LEFT":
+        elif user_input.key == "KP4":
             player_move_or_attack(-1,0)
-            fov_recompute = True
-        elif user_input.key == "RIGHT":
+        elif user_input.key == "KP6":
             player_move_or_attack(1,0)
-            fov_recompute = True
+        elif user_input.key == "KP1":
+            player_move_or_attack(-1,1)
+        elif user_input.key == "KP3":
+            player_move_or_attack(1,1)
         else:
             return "didnt_take_a_turn"
 
@@ -426,7 +421,7 @@ make_map()
 tdl.set_fps(LIMIT_FPS)
 mouse_coord = (0,0)
 
-message("Bem vindo ao jogo, prepare-se para o terrivel beta do meu roguelike fodaum", color = color_red)
+message("Bem vindo ao jogo, prepare-se para o beta do meu roguelike", color = cores.red)
 while not tdl.event.is_window_closed():
     render_all()
 
